@@ -16,6 +16,7 @@ from .routers import (
     accounts,
     financial_transactions,
 )
+from .api import production
 
 app = FastAPI(title="ERP API")
 
@@ -34,6 +35,7 @@ app.include_router(production_jobs.router)
 app.include_router(production_logs.router)
 app.include_router(accounts.router)
 app.include_router(financial_transactions.router)
+app.include_router(production.router)
 
 @app.get("/")
 async def root():
