@@ -11,6 +11,7 @@ from ..database import get_db
 from ..auth import get_current_user
 from ..dependencies import get_current_org
 from ..core.deps import has_permission
+from typing import Optional
 
 router = APIRouter(prefix="/orders", tags=["orders"])
 

@@ -1,20 +1,33 @@
-version: '3.9'
+version: '3.8' # Sürümü daha modern bir formata güncelledim.
+
 services:
   postgres:
     image: postgres:15
-    env_file: .env
+    env_file:
+      - .env # .env dosyasının bu klasörde olduğunu belirtiyoruz.
     ports:
       - "5432:5432"
+    volumes:
+      - ops_db-data:/var/lib/postgresql/data # Veritabanı verilerinin kalıcı olmasını sağlar.
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $POSTGRES_USER"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
+      timeout: 5s
       retries: 5
+
   backend:
-    build: ../backend
-    env_file: .env
+    build:
+      context: ../backend # Backend kodunun nerede olduğunu belirtir.
+    env_file:
+      - .env # .env dosyasını bu servis için de kullanıyoruz.
     depends_on:
       postgres:
-        condition: service_healthy
+        condition: service_healthy # Backend'in, veritabanı hazır olmadan başlamasını engeller.
     ports:
       - "8000:8000"
-    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+    volumes:
+      - ../backend:/app # İŞTE EN KRİTİK KISIM BU: Bilgisayarındaki 'backend' klasörü ile konteynerin içindeki '/app' klasörünü canlı olarak senkronize eder.
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+volumes:
+  ops_db-data:

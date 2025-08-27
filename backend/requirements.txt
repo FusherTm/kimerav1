@@ -6,3 +6,6 @@ python-jose
 passlib[bcrypt]
 pydantic
 alembic
+email-validator
+pydantic-settings
+python-multipart
