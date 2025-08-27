@@ -20,10 +20,15 @@ interface ProductFormProps {
 }
 
 export default function ProductForm({ initialValues, onSubmit, onCancel }: ProductFormProps) {
-  const { register, handleSubmit, formState: { errors } } = useForm<ProductFormValues>({
+  const { register, handleSubmit, formState: { errors }, reset } = useForm<ProductFormValues>({
     resolver: zodResolver(productSchema),
     defaultValues: initialValues || {},
   });
+
+  const submitHandler = async (data: ProductFormValues) => {
+    await onSubmit(data);
+    reset();
+  };
 
   const [categories, setCategories] = useState<Category[]>([]);
   const token = '';
@@ -39,7 +44,7 @@ export default function ProductForm({ initialValues, onSubmit, onCancel }: Produ
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-      <form onSubmit={handleSubmit(onSubmit)} className="bg-white p-6 rounded w-96 space-y-4">
+      <form onSubmit={handleSubmit(submitHandler)} className="bg-white p-6 rounded w-96 space-y-4">
         <h2 className="text-lg font-bold">Product</h2>
         <div>
           <label className="block">Name</label>

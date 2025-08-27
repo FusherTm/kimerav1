@@ -4,6 +4,7 @@ import Layout from '../../components/Layout';
 import { listPartners, Partner } from '../../lib/api/partners';
 import { listProducts, Product } from '../../lib/api/products';
 import { createOrder, OrderItemInput } from '../../lib/api/orders';
+import toast from 'react-hot-toast';
 
 export default function NewOrderPage() {
   const [step, setStep] = useState(1);
@@ -52,8 +53,15 @@ export default function NewOrderPage() {
   const grandTotal = items.reduce((sum, it) => sum + totalFor(it), 0);
 
   const handleSubmit = async () => {
-    await createOrder(token, org, { ...form, items });
-    router.push('/orders');
+    try {
+      await createOrder(token, org, { ...form, items });
+      toast.success('Order created');
+      setForm({});
+      setItems([]);
+      router.push('/orders');
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Failed to create order');
+    }
   };
 
   return (

@@ -28,12 +28,18 @@ export default function FinancePage() {
     <Layout>
       <h1 className="text-xl font-bold mb-4">Finans Yönetimi</h1>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {accounts.map((a) => (
-          <div key={a.id} className="bg-white p-4 shadow">
-            <h2 className="text-lg font-semibold">{a.name}</h2>
-            <p className="text-gray-600">Bakiye: {a.current_balance}</p>
-          </div>
-        ))}
+        {accounts.length > 0 ? (
+          accounts.map((a) => (
+            <div key={a.id} className="bg-white p-4 shadow">
+              <h2 className="text-lg font-semibold">{a.name}</h2>
+              <p className="text-gray-600">Bakiye: {a.current_balance}</p>
+            </div>
+          ))
+        ) : (
+          <p className="col-span-2 text-center p-4">
+            No accounts found.
+          </p>
+        )}
       </div>
       <button
         onClick={() => setModalOpen(true)}

@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import Layout from '../../components/Layout';
 import ProductForm, { ProductFormValues } from '../../components/ProductForm';
+import ConfirmDialog from '../../components/ConfirmDialog';
+import toast from 'react-hot-toast';
 import {
   listProducts,
   createProduct,
@@ -17,6 +19,7 @@ export default function ProductsPage() {
   const [categoryFilter, setCategoryFilter] = useState('All');
   const [modalOpen, setModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [deletingProduct, setDeletingProduct] = useState<Product | null>(null);
 
   const token = '';
   const org = '';
@@ -48,13 +51,19 @@ export default function ProductsPage() {
   };
 
   const handleSubmit = async (values: ProductFormValues) => {
-    if (editingProduct) {
-      await updateProduct(token, org, editingProduct.id, values);
-    } else {
-      await createProduct(token, org, values);
+    try {
+      if (editingProduct) {
+        await updateProduct(token, org, editingProduct.id, values);
+        toast.success('Product successfully updated');
+      } else {
+        await createProduct(token, org, values);
+        toast.success('Product successfully created');
+      }
+      setModalOpen(false);
+      await loadProducts();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Operation failed');
     }
-    setModalOpen(false);
-    await loadProducts();
   };
 
   const handleEdit = (product: Product) => {
@@ -62,11 +71,20 @@ export default function ProductsPage() {
     setModalOpen(true);
   };
 
-  const handleDelete = async (product: Product) => {
-    if (confirm('Delete product?')) {
-      await deleteProduct(token, org, product.id);
+  const handleDelete = (product: Product) => {
+    setDeletingProduct(product);
+  };
+
+  const confirmDelete = async () => {
+    if (!deletingProduct) return;
+    try {
+      await deleteProduct(token, org, deletingProduct.id);
+      toast.success('Product successfully deleted');
       await loadProducts();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Delete failed');
     }
+    setDeletingProduct(null);
   };
 
   const getCategoryName = (id?: string) =>
@@ -112,28 +130,36 @@ export default function ProductsPage() {
           </tr>
         </thead>
         <tbody>
-          {products.map((p) => (
-            <tr key={p.id}>
-              <td className="border p-2">{p.name}</td>
-              <td className="border p-2">{p.sku}</td>
-              <td className="border p-2">{getCategoryName(p.category_id)}</td>
-              <td className="border p-2">{p.base_price_sqm}</td>
-              <td className="border p-2 space-x-2 text-center">
-                <button
-                  onClick={() => handleEdit(p)}
-                  className="px-2 py-1 bg-yellow-400"
-                >
-                  Edit
-                </button>
-                <button
-                  onClick={() => handleDelete(p)}
-                  className="px-2 py-1 bg-red-500 text-white"
-                >
-                  Delete
-                </button>
+          {products.length > 0 ? (
+            products.map((p) => (
+              <tr key={p.id}>
+                <td className="border p-2">{p.name}</td>
+                <td className="border p-2">{p.sku}</td>
+                <td className="border p-2">{getCategoryName(p.category_id)}</td>
+                <td className="border p-2">{p.base_price_sqm}</td>
+                <td className="border p-2 space-x-2 text-center">
+                  <button
+                    onClick={() => handleEdit(p)}
+                    className="px-2 py-1 bg-yellow-400"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => handleDelete(p)}
+                    className="px-2 py-1 bg-red-500 text-white"
+                  >
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            ))
+          ) : (
+            <tr>
+              <td colSpan={5} className="text-center p-4">
+                No products found. Click 'New Product' to create one.
               </td>
             </tr>
-          ))}
+          )}
         </tbody>
       </table>
       {modalOpen && (
@@ -141,6 +167,13 @@ export default function ProductsPage() {
           initialValues={editingProduct || undefined}
           onSubmit={handleSubmit}
           onCancel={() => setModalOpen(false)}
+        />
+      )}
+      {deletingProduct && (
+        <ConfirmDialog
+          message="Are you sure you want to delete this? This action cannot be undone."
+          onConfirm={confirmDelete}
+          onCancel={() => setDeletingProduct(null)}
         />
       )}
     </Layout>

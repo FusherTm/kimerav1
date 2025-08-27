@@ -21,14 +21,19 @@ interface PartnerFormProps {
 }
 
 export default function PartnerForm({ initialValues, onSubmit, onCancel }: PartnerFormProps) {
-  const { register, handleSubmit, formState: { errors } } = useForm<PartnerFormValues>({
+  const { register, handleSubmit, formState: { errors }, reset } = useForm<PartnerFormValues>({
     resolver: zodResolver(partnerSchema),
     defaultValues: initialValues || { type: 'CUSTOMER' },
   });
 
+  const submitHandler = async (data: PartnerFormValues) => {
+    await onSubmit(data);
+    reset({ type: 'CUSTOMER' });
+  };
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-      <form onSubmit={handleSubmit(onSubmit)} className="bg-white p-6 rounded w-96 space-y-4">
+      <form onSubmit={handleSubmit(submitHandler)} className="bg-white p-6 rounded w-96 space-y-4">
         <h2 className="text-lg font-bold">Partner</h2>
         <div>
           <label className="block">Name</label>

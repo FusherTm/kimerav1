@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Account, TransactionInput, recordTransaction } from '../lib/api/finance';
 import { listPartners, Partner } from '../lib/api/partners';
+import toast from 'react-hot-toast';
 
 const schema = z.object({
   account_id: z.string().min(1, 'Account is required'),
@@ -44,9 +45,14 @@ export default function TransactionForm({ accounts, onSuccess, onCancel }: Props
   }, [partnerSearch]);
 
   const onSubmit = async (data: TransactionFormValues) => {
-    await recordTransaction(token, org, data as TransactionInput);
-    reset();
-    onSuccess();
+    try {
+      await recordTransaction(token, org, data as TransactionInput);
+      reset();
+      toast.success('Transaction recorded');
+      onSuccess();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Failed to record transaction');
+    }
   };
 
   return (

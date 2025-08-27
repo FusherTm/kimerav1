@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import Layout from '../../components/Layout';
 import PartnerForm, { PartnerFormValues } from '../../components/PartnerForm';
+import ConfirmDialog from '../../components/ConfirmDialog';
+import toast from 'react-hot-toast';
 import {
   listPartners,
   createPartner,
@@ -15,6 +17,7 @@ export default function PartnersPage() {
   const [typeFilter, setTypeFilter] = useState('All');
   const [modalOpen, setModalOpen] = useState(false);
   const [editingPartner, setEditingPartner] = useState<Partner | null>(null);
+  const [deletingPartner, setDeletingPartner] = useState<Partner | null>(null);
 
   const token = '';
   const org = '';
@@ -37,13 +40,19 @@ export default function PartnersPage() {
   };
 
   const handleSubmit = async (values: PartnerFormValues) => {
-    if (editingPartner) {
-      await updatePartner(token, org, editingPartner.id, values);
-    } else {
-      await createPartner(token, org, values);
+    try {
+      if (editingPartner) {
+        await updatePartner(token, org, editingPartner.id, values);
+        toast.success('Partner successfully updated');
+      } else {
+        await createPartner(token, org, values);
+        toast.success('Partner successfully created');
+      }
+      setModalOpen(false);
+      await loadPartners();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Operation failed');
     }
-    setModalOpen(false);
-    await loadPartners();
   };
 
   const handleEdit = (partner: Partner) => {
@@ -51,11 +60,20 @@ export default function PartnersPage() {
     setModalOpen(true);
   };
 
-  const handleDelete = async (partner: Partner) => {
-    if (confirm('Delete partner?')) {
-      await deletePartner(token, org, partner.id);
+  const handleDelete = (partner: Partner) => {
+    setDeletingPartner(partner);
+  };
+
+  const confirmDelete = async () => {
+    if (!deletingPartner) return;
+    try {
+      await deletePartner(token, org, deletingPartner.id);
+      toast.success('Partner successfully deleted');
       await loadPartners();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Delete failed');
     }
+    setDeletingPartner(null);
   };
 
   return (
@@ -95,28 +113,36 @@ export default function PartnersPage() {
           </tr>
         </thead>
         <tbody>
-          {partners.map((p) => (
-            <tr key={p.id}>
-              <td className="border p-2">{p.name}</td>
-              <td className="border p-2">{p.type}</td>
-              <td className="border p-2">{p.email}</td>
-              <td className="border p-2">{p.phone}</td>
-              <td className="border p-2 space-x-2 text-center">
-                <button
-                  onClick={() => handleEdit(p)}
-                  className="px-2 py-1 bg-yellow-400"
-                >
-                  Edit
-                </button>
-                <button
-                  onClick={() => handleDelete(p)}
-                  className="px-2 py-1 bg-red-500 text-white"
-                >
-                  Delete
-                </button>
+          {partners.length > 0 ? (
+            partners.map((p) => (
+              <tr key={p.id}>
+                <td className="border p-2">{p.name}</td>
+                <td className="border p-2">{p.type}</td>
+                <td className="border p-2">{p.email}</td>
+                <td className="border p-2">{p.phone}</td>
+                <td className="border p-2 space-x-2 text-center">
+                  <button
+                    onClick={() => handleEdit(p)}
+                    className="px-2 py-1 bg-yellow-400"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => handleDelete(p)}
+                    className="px-2 py-1 bg-red-500 text-white"
+                  >
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            ))
+          ) : (
+            <tr>
+              <td colSpan={5} className="text-center p-4">
+                No partners found. Click 'New Partner' to create one.
               </td>
             </tr>
-          ))}
+          )}
         </tbody>
       </table>
       {modalOpen && (
@@ -124,6 +150,13 @@ export default function PartnersPage() {
           initialValues={editingPartner || undefined}
           onSubmit={handleSubmit}
           onCancel={() => setModalOpen(false)}
+        />
+      )}
+      {deletingPartner && (
+        <ConfirmDialog
+          message="Are you sure you want to delete this? This action cannot be undone."
+          onConfirm={confirmDelete}
+          onCancel={() => setDeletingPartner(null)}
         />
       )}
     </Layout>

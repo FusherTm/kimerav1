@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import Layout from '../../components/Layout';
 import CategoryForm, { CategoryFormValues } from '../../components/CategoryForm';
+import ConfirmDialog from '../../components/ConfirmDialog';
+import toast from 'react-hot-toast';
 import {
   listCategories,
   createCategory,
@@ -14,6 +16,7 @@ export default function CategoriesPage() {
   const [search, setSearch] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [deletingCategory, setDeletingCategory] = useState<Category | null>(null);
 
   const token = '';
   const org = '';
@@ -35,13 +38,19 @@ export default function CategoriesPage() {
   };
 
   const handleSubmit = async (values: CategoryFormValues) => {
-    if (editingCategory) {
-      await updateCategory(token, org, editingCategory.id, values);
-    } else {
-      await createCategory(token, org, values);
+    try {
+      if (editingCategory) {
+        await updateCategory(token, org, editingCategory.id, values);
+        toast.success('Category successfully updated');
+      } else {
+        await createCategory(token, org, values);
+        toast.success('Category successfully created');
+      }
+      setModalOpen(false);
+      await loadCategories();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Operation failed');
     }
-    setModalOpen(false);
-    await loadCategories();
   };
 
   const handleEdit = (category: Category) => {
@@ -49,11 +58,20 @@ export default function CategoriesPage() {
     setModalOpen(true);
   };
 
-  const handleDelete = async (category: Category) => {
-    if (confirm('Delete category?')) {
-      await deleteCategory(token, org, category.id);
+  const handleDelete = (category: Category) => {
+    setDeletingCategory(category);
+  };
+
+  const confirmDelete = async () => {
+    if (!deletingCategory) return;
+    try {
+      await deleteCategory(token, org, deletingCategory.id);
+      toast.success('Category successfully deleted');
       await loadCategories();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Delete failed');
     }
+    setDeletingCategory(null);
   };
 
   return (
@@ -82,26 +100,34 @@ export default function CategoriesPage() {
           </tr>
         </thead>
         <tbody>
-          {categories.map((c) => (
-            <tr key={c.id}>
-              <td className="border p-2">{c.name}</td>
-              <td className="border p-2">{c.code}</td>
-              <td className="border p-2 space-x-2 text-center">
-                <button
-                  onClick={() => handleEdit(c)}
-                  className="px-2 py-1 bg-yellow-400"
-                >
-                  Edit
-                </button>
-                <button
-                  onClick={() => handleDelete(c)}
-                  className="px-2 py-1 bg-red-500 text-white"
-                >
-                  Delete
-                </button>
+          {categories.length > 0 ? (
+            categories.map((c) => (
+              <tr key={c.id}>
+                <td className="border p-2">{c.name}</td>
+                <td className="border p-2">{c.code}</td>
+                <td className="border p-2 space-x-2 text-center">
+                  <button
+                    onClick={() => handleEdit(c)}
+                    className="px-2 py-1 bg-yellow-400"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => handleDelete(c)}
+                    className="px-2 py-1 bg-red-500 text-white"
+                  >
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            ))
+          ) : (
+            <tr>
+              <td colSpan={3} className="text-center p-4">
+                No categories found. Click 'New Category' to create one.
               </td>
             </tr>
-          ))}
+          )}
         </tbody>
       </table>
       {modalOpen && (
@@ -109,6 +135,13 @@ export default function CategoriesPage() {
           initialValues={editingCategory || undefined}
           onSubmit={handleSubmit}
           onCancel={() => setModalOpen(false)}
+        />
+      )}
+      {deletingCategory && (
+        <ConfirmDialog
+          message="Are you sure you want to delete this? This action cannot be undone."
+          onConfirm={confirmDelete}
+          onCancel={() => setDeletingCategory(null)}
         />
       )}
     </Layout>
