@@ -12,6 +12,7 @@ export default function Layout({ children }: { children: ReactNode }) {
           <Link href="/categories">Categories</Link>
           <Link href="/orders">Siparişler</Link>
           <Link href="/production">Üretim Paneli</Link>
+          <Link href="/finance">Finans</Link>
         </nav>
       </aside>
       <div className="flex-1">
