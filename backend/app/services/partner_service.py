@@ -3,6 +3,7 @@ from uuid import UUID
 
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
+from fastapi import HTTPException
 
 from .. import models, schemas
 
@@ -32,6 +33,7 @@ def list_partners(
     db: Session,
     current_user: models.User,
     partner_type: Optional[models.PartnerType] = None,
+    is_active: Optional[bool] = None,
     search: Optional[str] = None,
     skip: int = 0,
     limit: int = 100,
@@ -42,6 +44,8 @@ def list_partners(
     )
     if partner_type:
         query = query.filter(models.Partner.type == partner_type)
+    if is_active is not None:
+        query = query.filter(models.Partner.is_active == is_active)
     if search:
         like = f"%{search}%"
         query = query.filter(
@@ -73,6 +77,16 @@ def delete_partner(db: Session, partner_id: UUID, current_user: models.User) -> 
     partner = get_partner(db, partner_id, current_user)
     if not partner:
         return False
+    exists_order = (
+        db.query(models.Order)
+        .filter(models.Order.partner_id == partner_id)
+        .first()
+    )
+    if exists_order:
+        raise HTTPException(
+            status_code=409,
+            detail="This partner cannot be deleted because they have existing orders.",
+        )
     db.delete(partner)
     db.commit()
     return True

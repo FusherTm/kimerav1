@@ -9,24 +9,16 @@ from ..services import partner_service
 from ..database import get_db
 from ..auth import get_current_user
 from ..dependencies import get_current_org
+from ..core.deps import has_permission
 
 router = APIRouter(prefix="/partners", tags=["partners"])
-
-
-def _ensure_admin(db: Session, user: models.User, org: models.Organization):
-    membership = (
-        db.query(models.UserOrganization)
-        .filter_by(user_id=user.id, org_id=org.id)
-        .first()
-    )
-    if not membership or membership.role.lower() != "admin":
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin privileges required")
 
 
 @router.get("/", response_model=List[schemas.PartnerRead])
 def list_partners(
     partner_type: Optional[schemas.PartnerType] = None,
     search: Optional[str] = None,
+    is_active: Optional[bool] = None,
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
@@ -38,6 +30,7 @@ def list_partners(
         db,
         current_user,
         partner_type=partner_type,
+        is_active=is_active,
         search=search,
         skip=skip,
         limit=limit,
@@ -49,11 +42,8 @@ def list_partners(
 def create_partner(
     partner_in: schemas.PartnerCreate,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user),
-    org: models.Organization = Depends(get_current_org),
+    current_user: models.User = Depends(has_permission("partner:create")),
 ):
-    current_user.organization_id = org.id
-    _ensure_admin(db, current_user, org)
     return partner_service.create_partner(db, partner_in, current_user)
 
 
@@ -76,11 +66,8 @@ def update_partner(
     partner_id: UUID,
     partner_in: schemas.PartnerCreate,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user),
-    org: models.Organization = Depends(get_current_org),
+    current_user: models.User = Depends(has_permission("partner:update")),
 ):
-    current_user.organization_id = org.id
-    _ensure_admin(db, current_user, org)
     partner = partner_service.update_partner(db, partner_id, partner_in, current_user)
     if not partner:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Partner not found")
@@ -91,11 +78,8 @@ def update_partner(
 def delete_partner(
     partner_id: UUID,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user),
-    org: models.Organization = Depends(get_current_org),
+    current_user: models.User = Depends(has_permission("partner:delete")),
 ):
-    current_user.organization_id = org.id
-    _ensure_admin(db, current_user, org)
     success = partner_service.delete_partner(db, partner_id, current_user)
     if not success:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Partner not found")

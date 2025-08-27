@@ -4,6 +4,7 @@ from uuid import UUID
 
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
+from fastapi import HTTPException
 
 from .. import models, schemas
 
@@ -67,6 +68,16 @@ def delete_category(db: Session, category_id: UUID, current_user: models.User) -
     category = get_category(db, category_id, current_user)
     if not category:
         return False
+    exists_product = (
+        db.query(models.Product)
+        .filter(models.Product.category_id == category_id)
+        .first()
+    )
+    if exists_product:
+        raise HTTPException(
+            status_code=409,
+            detail="This category cannot be deleted because it is used by existing products.",
+        )
     db.delete(category)
     db.commit()
     return True

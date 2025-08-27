@@ -3,6 +3,7 @@ from uuid import UUID
 
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
+from fastapi import HTTPException
 
 from .. import models, schemas
 
@@ -69,6 +70,16 @@ def delete_product(db: Session, product_id: UUID, current_user: models.User) -> 
     product = get_product(db, product_id, current_user)
     if not product:
         return False
+    exists_item = (
+        db.query(models.OrderItem)
+        .filter(models.OrderItem.product_id == product_id)
+        .first()
+    )
+    if exists_item:
+        raise HTTPException(
+            status_code=409,
+            detail="This product cannot be deleted because it is used in order items.",
+        )
     db.delete(product)
     db.commit()
     return True

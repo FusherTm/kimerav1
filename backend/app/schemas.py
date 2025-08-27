@@ -57,6 +57,7 @@ class PartnerBase(BaseModel):
     email: Optional[str]
     address: Optional[str]
     tax_number: Optional[str]
+    is_active: Optional[bool] = True
 
 class PartnerCreate(PartnerBase):
     pass

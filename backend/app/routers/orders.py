@@ -10,21 +10,9 @@ from ..services import order_service
 from ..database import get_db
 from ..auth import get_current_user
 from ..dependencies import get_current_org
+from ..core.deps import has_permission
 
 router = APIRouter(prefix="/orders", tags=["orders"])
-
-
-def _ensure_admin(db: Session, user: models.User, org: models.Organization):
-    membership = (
-        db.query(models.UserOrganization)
-        .filter_by(user_id=user.id, org_id=org.id)
-        .first()
-    )
-    if not membership or membership.role.lower() != "admin":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin privileges required",
-        )
 
 
 class StatusUpdate(BaseModel):
@@ -35,11 +23,8 @@ class StatusUpdate(BaseModel):
 def create_order(
     order_in: schemas.OrderCreateWithItems,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user),
-    org: models.Organization = Depends(get_current_org),
+    current_user: models.User = Depends(has_permission("order:create")),
 ):
-    current_user.organization_id = org.id
-    _ensure_admin(db, current_user, org)
     order = order_service.create_order(db, order_in, current_user)
     order_db, items = order_service.get_order(db, order.id, current_user)
     if not order_db:
@@ -52,6 +37,8 @@ def create_order(
 
 @router.get("/", response_model=List[schemas.OrderRead])
 def list_orders(
+    status: Optional[str] = None,
+    partner_id: Optional[UUID] = None,
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
@@ -59,7 +46,14 @@ def list_orders(
     org: models.Organization = Depends(get_current_org),
 ):
     current_user.organization_id = org.id
-    orders = order_service.list_orders(db, current_user, skip, limit)
+    orders = order_service.list_orders(
+        db,
+        current_user,
+        status=status,
+        partner_id=partner_id,
+        skip=skip,
+        limit=limit,
+    )
     return orders
 
 
@@ -85,11 +79,8 @@ def change_status(
     order_id: UUID,
     status_in: StatusUpdate,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user),
-    org: models.Organization = Depends(get_current_org),
+    current_user: models.User = Depends(has_permission("order:update")),
 ):
-    current_user.organization_id = org.id
-    _ensure_admin(db, current_user, org)
     order = order_service.update_order_status(db, order_id, status_in.status, current_user)
     if not order:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found")

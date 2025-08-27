@@ -1,6 +1,18 @@
 import uuid
 from datetime import datetime
-from sqlalchemy import Column, String, Boolean, ForeignKey, Date, DateTime, Integer, Numeric, Enum, DECIMAL
+from sqlalchemy import (
+    Column,
+    String,
+    Boolean,
+    ForeignKey,
+    Date,
+    DateTime,
+    Integer,
+    Numeric,
+    Enum,
+    DECIMAL,
+    JSON,
+)
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from .database import Base
@@ -45,6 +57,13 @@ class UserOrganization(Base):
     user = relationship("User", back_populates="organizations")
     organization = relationship("Organization", back_populates="users")
 
+
+class Role(Base):
+    __tablename__ = "roles"
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name = Column(String, unique=True, nullable=False)
+    permissions = Column(JSON, default={})
+
 class Partner(Base):
     __tablename__ = "partners"
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -56,6 +75,7 @@ class Partner(Base):
     email = Column(String)
     address = Column(String)
     tax_number = Column(String)
+    is_active = Column(Boolean, default=True)
 
 class Category(Base):
     __tablename__ = "categories"

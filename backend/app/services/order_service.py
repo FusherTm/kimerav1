@@ -124,12 +124,22 @@ def update_order_status(
 
 
 def list_orders(
-    db: Session, current_user: models.User, skip: int = 0, limit: int = 100
+    db: Session,
+    current_user: models.User,
+    status: Optional[str] = None,
+    partner_id: Optional[UUID] = None,
+    skip: int = 0,
+    limit: int = 100,
 ) -> List[models.Order]:
+    query = db.query(models.Order).filter(
+        models.Order.organization_id == current_user.organization_id
+    )
+    if status:
+        query = query.filter(models.Order.status == status)
+    if partner_id:
+        query = query.filter(models.Order.partner_id == partner_id)
     return (
-        db.query(models.Order)
-        .filter(models.Order.organization_id == current_user.organization_id)
-        .order_by(models.Order.order_date.desc())
+        query.order_by(models.Order.order_date.desc())
         .offset(skip)
         .limit(limit)
         .all()
