@@ -16,14 +16,19 @@ interface CategoryFormProps {
 }
 
 export default function CategoryForm({ initialValues, onSubmit, onCancel }: CategoryFormProps) {
-  const { register, handleSubmit, formState: { errors } } = useForm<CategoryFormValues>({
+  const { register, handleSubmit, formState: { errors }, reset } = useForm<CategoryFormValues>({
     resolver: zodResolver(categorySchema),
     defaultValues: initialValues || {},
   });
 
+  const submitHandler = async (data: CategoryFormValues) => {
+    await onSubmit(data);
+    reset();
+  };
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-      <form onSubmit={handleSubmit(onSubmit)} className="bg-white p-6 rounded w-96 space-y-4">
+      <form onSubmit={handleSubmit(submitHandler)} className="bg-white p-6 rounded w-96 space-y-4">
         <h2 className="text-lg font-bold">Category</h2>
         <div>
           <label className="block">Name</label>

@@ -2,12 +2,16 @@ import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 import Layout from '../../components/Layout';
 import { getOrder, updateOrderStatus, OrderDetail } from '../../lib/api/orders';
+import { listPartners, Partner } from '../../lib/api/partners';
+import { listProducts, Product } from '../../lib/api/products';
 
 export default function OrderDetailPage() {
   const router = useRouter();
   const { id } = router.query;
   const [order, setOrder] = useState<OrderDetail | null>(null);
   const [status, setStatus] = useState('');
+  const [partners, setPartners] = useState<Partner[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const token = '';
   const org = '';
 
@@ -17,6 +21,8 @@ export default function OrderDetailPage() {
         setOrder(data);
         setStatus(data.status || '');
       });
+      listPartners(token, org).then(setPartners);
+      listProducts(token, org, {}).then(setProducts);
     }
   }, [id]);
 
@@ -31,6 +37,7 @@ export default function OrderDetailPage() {
       {order ? (
         <div className="space-y-4">
           <h1 className="text-xl font-bold">Sipariş {order.order_number}</h1>
+          <div>Partner: {partners.find((p) => p.id === order.partner_id)?.name || ''}</div>
           <div>Durum: {order.status}</div>
           <div className="flex items-center space-x-2">
             <select
@@ -63,16 +70,26 @@ export default function OrderDetailPage() {
               </tr>
             </thead>
             <tbody>
-              {order.items.map((it) => (
-                <tr key={it.id}>
-                  <td className="border p-2">{it.description}</td>
-                  <td className="border p-2">{it.width}</td>
-                  <td className="border p-2">{it.height}</td>
-                  <td className="border p-2">{it.quantity}</td>
-                  <td className="border p-2">{it.unit_price}</td>
-                  <td className="border p-2">{it.total_price}</td>
+              {order.items.length > 0 ? (
+                order.items.map((it) => (
+                  <tr key={it.id}>
+                    <td className="border p-2">
+                      {products.find((pr) => pr.id === it.product_id)?.name || it.description}
+                    </td>
+                    <td className="border p-2">{it.width}</td>
+                    <td className="border p-2">{it.height}</td>
+                    <td className="border p-2">{it.quantity}</td>
+                    <td className="border p-2">{it.unit_price}</td>
+                    <td className="border p-2">{it.total_price}</td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={6} className="text-center p-4">
+                    No items found for this order.
+                  </td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>
