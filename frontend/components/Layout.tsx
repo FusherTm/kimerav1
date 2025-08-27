@@ -8,6 +8,8 @@ export default function Layout({ children }: { children: ReactNode }) {
         <nav className="flex flex-col space-y-2">
           <Link href="/">Dashboard</Link>
           <Link href="/partners">Partners</Link>
+          <Link href="/products">Products</Link>
+          <Link href="/categories">Categories</Link>
         </nav>
       </aside>
       <div className="flex-1">
