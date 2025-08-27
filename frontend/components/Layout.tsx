@@ -10,6 +10,7 @@ export default function Layout({ children }: { children: ReactNode }) {
           <Link href="/partners">Partners</Link>
           <Link href="/products">Products</Link>
           <Link href="/categories">Categories</Link>
+          <Link href="/orders">Siparişler</Link>
         </nav>
       </aside>
       <div className="flex-1">

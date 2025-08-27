@@ -1,6 +1,6 @@
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Optional
+from typing import Optional, List
 from uuid import UUID
 from pydantic import BaseModel, EmailStr
 from enum import Enum
@@ -149,6 +149,24 @@ class OrderItemRead(OrderItemBase):
 
     class Config:
         orm_mode = True
+
+
+class OrderItemNested(BaseModel):
+    product_id: Optional[UUID]
+    description: Optional[str]
+    width: Optional[int]
+    height: Optional[int]
+    quantity: Optional[int]
+    unit_price: Optional[Decimal]
+    notes: Optional[str]
+
+
+class OrderCreateWithItems(OrderBase):
+    items: List[OrderItemNested] = []
+
+
+class OrderDetail(OrderRead):
+    items: List[OrderItemRead] = []
 
 class PurchaseOrderBase(BaseModel):
     partner_id: Optional[UUID]
