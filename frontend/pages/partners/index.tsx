@@ -18,16 +18,21 @@ export default function PartnersPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingPartner, setEditingPartner] = useState<Partner | null>(null);
   const [deletingPartner, setDeletingPartner] = useState<Partner | null>(null);
-
-  const token = '';
-  const org = '';
+  const [error, setError] = useState('');
 
   const loadPartners = async () => {
     const params: any = {};
     if (typeFilter !== 'All') params.type = typeFilter;
     if (search) params.search = search;
-    const data = await listPartners(token, org, params);
-    setPartners(data);
+    try {
+      const rows = await listPartners(params);
+      setPartners(rows);
+      setError('');
+    } catch (err: any) {
+      const status = err?.response?.status;
+      const msg = err?.response?.data?.detail ?? err?.message ?? 'Unknown error';
+      setError(`Partners fetch failed: ${status ?? ''} ${msg}`);
+    }
   };
 
   useEffect(() => {
@@ -42,16 +47,16 @@ export default function PartnersPage() {
   const handleSubmit = async (values: PartnerFormValues) => {
     try {
       if (editingPartner) {
-        await updatePartner(token, org, editingPartner.id, values);
+        await updatePartner(editingPartner.id, values);
         toast.success('Partner successfully updated');
       } else {
-        await createPartner(token, org, values);
+        await createPartner(values);
         toast.success('Partner successfully created');
       }
       setModalOpen(false);
       await loadPartners();
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || 'Operation failed');
+      toast.error(err?.response?.data?.detail || err.message || 'Operation failed');
     }
   };
 
@@ -67,11 +72,11 @@ export default function PartnersPage() {
   const confirmDelete = async () => {
     if (!deletingPartner) return;
     try {
-      await deletePartner(token, org, deletingPartner.id);
+      await deletePartner(deletingPartner.id);
       toast.success('Partner successfully deleted');
       await loadPartners();
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || 'Delete failed');
+      toast.error(err?.response?.data?.detail || err.message || 'Delete failed');
     }
     setDeletingPartner(null);
   };
@@ -79,6 +84,7 @@ export default function PartnersPage() {
   return (
     <Layout>
       <h1 className="text-xl font-bold mb-4">Müşteriler ve Tedarikçiler</h1>
+      {error && <div style={{ color: 'red' }}>{error}</div>}
       <div className="mb-4 flex space-x-2">
         <input
           value={search}

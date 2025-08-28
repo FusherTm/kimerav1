@@ -18,19 +18,18 @@ from .routers import (
 )
 from .api import production, dashboard
 from app.api import admin as admin_router
-from fastapi.middleware.cors import CORSMiddlewareb
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(title="ERP API")
 
-# CORS (Cross-Origin Resource Sharing) Ayarları
-# Bu bölüm, frontend'in (localhost:3000) backend'e (localhost:8000)
-# güvenli bir şekilde istek atabilmesini sağlar.
+origins = ["http://localhost:3000", "http://127.0.0.1:3000"]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # Frontend'in adresine izin veriyoruz
+    allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["*"],  # Tüm metodlara (GET, POST, vb.) izin ver
-    allow_headers=["*"],  # Tüm başlıklara izin ver
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 app.include_router(auth.router)
@@ -51,6 +50,10 @@ app.include_router(financial_transactions.router)
 app.include_router(production.router)
 app.include_router(dashboard.router)
 app.include_router(admin_router)
+
+@app.get("/healthz")
+def healthz():
+    return {"ok": True}
 
 @app.get("/")
 async def root():
