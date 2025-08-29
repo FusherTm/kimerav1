@@ -24,6 +24,11 @@ def has_permission(permission_name: str):
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Not a member of this organization",
             )
+        # Admin shortcut: role name 'admin' has full access
+        if membership.role == 'admin':
+            current_user.organization_id = org.id
+            return current_user
+
         role = db.query(models.Role).filter_by(name=membership.role).first()
         if not role or not role.permissions or not role.permissions.get(permission_name):
             raise HTTPException(

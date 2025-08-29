@@ -12,6 +12,7 @@ export default function NewOrderPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [form, setForm] = useState<{ partner_id?: string; project_name?: string }>({});
   const [items, setItems] = useState<OrderItemInput[]>([]);
+  const [mode, setMode] = useState<'dimensions' | 'area'>('dimensions');
 
   const token = '';
   const org = '';
@@ -19,7 +20,7 @@ export default function NewOrderPage() {
 
   useEffect(() => {
     const load = async () => {
-      const p = await listPartners(token, org);
+      const p = await listPartners();
       const pr = await listProducts(token, org, {});
       setPartners(p);
       setProducts(pr);
@@ -28,25 +29,49 @@ export default function NewOrderPage() {
   }, []);
 
   const addItem = () => {
-    setItems([
-      ...items,
-      { product_id: '', width: 0, height: 0, quantity: 1, unit_price: 0 },
-    ]);
+    if (mode === 'area') {
+      setItems([
+        ...items,
+        { product_id: '', area_sqm: 0, quantity: 1, unit_price: 0 },
+      ]);
+    } else {
+      setItems([
+        ...items,
+        { product_id: '', width: 0, height: 0, quantity: 1, unit_price: 0 },
+      ]);
+    }
   };
 
   const updateItem = (index: number, field: keyof OrderItemInput, value: any) => {
     const newItems = [...items];
     // @ts-ignore
     newItems[index][field] = value;
+    if (field === 'product_id') {
+      const p = products.find(pr => pr.id === String(value));
+      if (p && p.base_price_sqm != null) {
+        // default unit price from product; user can override afterwards
+        // @ts-ignore
+        newItems[index].unit_price = p.base_price_sqm as any;
+      }
+    }
+    setItems(newItems);
+  };
+
+  const removeItem = (index: number) => {
+    const newItems = items.filter((_, i) => i !== index);
     setItems(newItems);
   };
 
   const totalFor = (item: OrderItemInput) => {
+    const unit = item.unit_price || 0;
+    if (item.area_sqm != null && item.area_sqm > 0) {
+      return (item.area_sqm || 0) * unit;
+    }
     return (
       ((item.width || 0) / 1000) *
       ((item.height || 0) / 1000) *
       (item.quantity || 0) *
-      (item.unit_price || 0)
+      unit
     );
   };
 
@@ -54,7 +79,16 @@ export default function NewOrderPage() {
 
   const handleSubmit = async () => {
     try {
-      await createOrder(token, org, { ...form, items });
+      // sanitize payload: empty strings -> undefined
+      const safeForm = {
+        ...form,
+        partner_id: form.partner_id && form.partner_id !== '' ? form.partner_id : undefined,
+      } as typeof form;
+      const safeItems = items.map((it) => ({
+        ...it,
+        product_id: it.product_id && it.product_id !== '' ? it.product_id : undefined,
+      }));
+      await createOrder(token, org, { ...safeForm, items: safeItems });
       toast.success('Order created');
       setForm({});
       setItems([]);
@@ -102,15 +136,38 @@ export default function NewOrderPage() {
       )}
       {step === 2 && (
         <div className="space-y-4">
+          <div className="flex items-center space-x-2">
+            <span className="text-sm text-gray-600">Satır modu:</span>
+            <button
+              className={`px-3 py-1 border ${mode === 'dimensions' ? 'bg-blue-600 text-white' : ''}`}
+              onClick={() => setMode('dimensions')}
+            >Ölçülerle</button>
+            <button
+              className={`px-3 py-1 border ${mode === 'area' ? 'bg-blue-600 text-white' : ''}`}
+              onClick={() => setMode('area')}
+            >Toplam m2 ile</button>
+          </div>
           <table className="min-w-full bg-white">
             <thead>
               <tr>
                 <th className="border p-2">Ürün</th>
-                <th className="border p-2">En (mm)</th>
-                <th className="border p-2">Boy (mm)</th>
-                <th className="border p-2">Adet</th>
-                <th className="border p-2">Birim Fiyat</th>
-                <th className="border p-2">Toplam</th>
+                {mode === 'area' ? (
+                  <>
+                    <th className="border p-2">Toplam m²</th>
+                    <th className="border p-2">Birim Fiyat</th>
+                    <th className="border p-2">Toplam</th>
+                    <th className="border p-2">İşlem</th>
+                  </>
+                ) : (
+                  <>
+                    <th className="border p-2">En (mm)</th>
+                    <th className="border p-2">Boy (mm)</th>
+                    <th className="border p-2">Adet</th>
+                    <th className="border p-2">Birim Fiyat</th>
+                    <th className="border p-2">Toplam</th>
+                    <th className="border p-2">İşlem</th>
+                  </>
+                )}
               </tr>
             </thead>
             <tbody>
@@ -130,39 +187,71 @@ export default function NewOrderPage() {
                       ))}
                     </select>
                   </td>
-                  <td className="border p-2">
-                    <input
-                      type="number"
-                      className="border p-1 w-24"
-                      value={item.width || 0}
-                      onChange={(e) => updateItem(idx, 'width', Number(e.target.value))}
-                    />
-                  </td>
-                  <td className="border p-2">
-                    <input
-                      type="number"
-                      className="border p-1 w-24"
-                      value={item.height || 0}
-                      onChange={(e) => updateItem(idx, 'height', Number(e.target.value))}
-                    />
-                  </td>
-                  <td className="border p-2">
-                    <input
-                      type="number"
-                      className="border p-1 w-20"
-                      value={item.quantity || 0}
-                      onChange={(e) => updateItem(idx, 'quantity', Number(e.target.value))}
-                    />
-                  </td>
-                  <td className="border p-2">
-                    <input
-                      type="number"
-                      className="border p-1 w-24"
-                      value={item.unit_price || 0}
-                      onChange={(e) => updateItem(idx, 'unit_price', Number(e.target.value))}
-                    />
-                  </td>
-                  <td className="border p-2">{totalFor(item).toFixed(2)}</td>
+                  {mode === 'area' ? (
+                    <>
+                      <td className="border p-2">
+                        <input
+                          type="number"
+                          step="0.01"
+                          className="border p-1 w-24"
+                          value={item.area_sqm ?? 0}
+                          onChange={(e) => updateItem(idx, 'area_sqm', Number(e.target.value))}
+                        />
+                      </td>
+                      <td className="border p-2">
+                        <input
+                          type="number"
+                          step="0.01"
+                          className="border p-1 w-24"
+                          value={item.unit_price || 0}
+                          onChange={(e) => updateItem(idx, 'unit_price', Number(e.target.value))}
+                        />
+                      </td>
+                      <td className="border p-2">{totalFor(item).toFixed(2)}</td>
+                      <td className="border p-2 text-center">
+                        <button className="text-red-600 underline" onClick={() => removeItem(idx)}>Sil</button>
+                      </td>
+                    </>
+                  ) : (
+                    <>
+                      <td className="border p-2">
+                        <input
+                          type="number"
+                          className="border p-1 w-24"
+                          value={item.width || 0}
+                          onChange={(e) => updateItem(idx, 'width', Number(e.target.value))}
+                        />
+                      </td>
+                      <td className="border p-2">
+                        <input
+                          type="number"
+                          className="border p-1 w-24"
+                          value={item.height || 0}
+                          onChange={(e) => updateItem(idx, 'height', Number(e.target.value))}
+                        />
+                      </td>
+                      <td className="border p-2">
+                        <input
+                          type="number"
+                          className="border p-1 w-20"
+                          value={item.quantity || 0}
+                          onChange={(e) => updateItem(idx, 'quantity', Number(e.target.value))}
+                        />
+                      </td>
+                      <td className="border p-2">
+                        <input
+                          type="number"
+                          className="border p-1 w-24"
+                          value={item.unit_price || 0}
+                          onChange={(e) => updateItem(idx, 'unit_price', Number(e.target.value))}
+                        />
+                      </td>
+                      <td className="border p-2">{totalFor(item).toFixed(2)}</td>
+                      <td className="border p-2 text-center">
+                        <button className="text-red-600 underline" onClick={() => removeItem(idx)}>Sil</button>
+                      </td>
+                    </>
+                  )}
                 </tr>
               ))}
             </tbody>

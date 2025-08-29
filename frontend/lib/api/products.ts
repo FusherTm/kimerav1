@@ -1,8 +1,4 @@
-import axios from 'axios';
-
-const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000',
-});
+import api from './client';
 
 export interface Product {
   id: string;
@@ -20,55 +16,29 @@ export interface ProductInput {
 }
 
 export async function listProducts(
-  token: string,
-  org: string,
+  _token: string,
+  _org: string,
   params: { search?: string; category_id?: string; skip?: number; limit?: number } = {}
 ) {
-  const res = await api.get<Product[]>(`/products`, {
-    params,
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'X-Org-Slug': org,
-    },
-  });
+  const res = await api.get<Product[]>(`/products/`, { params });
   return res.data;
 }
 
-export async function createProduct(token: string, org: string, data: ProductInput) {
-  const res = await api.post<Product>(`/products`, data, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'X-Org-Slug': org,
-    },
-  });
+export async function createProduct(_token: string, _org: string, data: ProductInput) {
+  const res = await api.post<Product>(`/products/`, data);
   return res.data;
 }
 
-export async function getProduct(token: string, org: string, id: string) {
-  const res = await api.get<Product>(`/products/${id}`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'X-Org-Slug': org,
-    },
-  });
+export async function getProduct(_token: string, _org: string, id: string) {
+  const res = await api.get<Product>(`/products/${id}`);
   return res.data;
 }
 
-export async function updateProduct(token: string, org: string, id: string, data: ProductInput) {
-  const res = await api.put<Product>(`/products/${id}`, data, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'X-Org-Slug': org,
-    },
-  });
+export async function updateProduct(_token: string, _org: string, id: string, data: ProductInput) {
+  const res = await api.put<Product>(`/products/${id}`, data);
   return res.data;
 }
 
-export async function deleteProduct(token: string, org: string, id: string) {
-  await api.delete(`/products/${id}`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'X-Org-Slug': org,
-    },
-  });
+export async function deleteProduct(_token: string, _org: string, id: string) {
+  await api.delete(`/products/${id}`);
 }

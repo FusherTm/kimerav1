@@ -1,0 +1,11 @@
+
+> erp-frontend@1.0.0 dev
+> next dev -H 0.0.0.0 -p 3000
+
+   ▲ Next.js 15.5.2
+   - Local:        http://localhost:3000
+   - Network:      http://0.0.0.0:3000
+   - Environments: .env.local
+
+ ✓ Starting...
+ ✓ Ready in 1612ms

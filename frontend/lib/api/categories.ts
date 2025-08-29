@@ -1,8 +1,4 @@
-import axios from 'axios';
-
-const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000',
-});
+import api from './client';
 
 export interface Category {
   id: string;
@@ -16,55 +12,29 @@ export interface CategoryInput {
 }
 
 export async function listCategories(
-  token: string,
-  org: string,
+  _token: string,
+  _org: string,
   params: { search?: string; skip?: number; limit?: number } = {}
 ) {
-  const res = await api.get<Category[]>(`/categories`, {
-    params,
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'X-Org-Slug': org,
-    },
-  });
+  const res = await api.get<Category[]>(`/categories/`, { params });
   return res.data;
 }
 
-export async function createCategory(token: string, org: string, data: CategoryInput) {
-  const res = await api.post<Category>(`/categories`, data, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'X-Org-Slug': org,
-    },
-  });
+export async function createCategory(_token: string, _org: string, data: CategoryInput) {
+  const res = await api.post<Category>(`/categories/`, data);
   return res.data;
 }
 
-export async function getCategory(token: string, org: string, id: string) {
-  const res = await api.get<Category>(`/categories/${id}`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'X-Org-Slug': org,
-    },
-  });
+export async function getCategory(_token: string, _org: string, id: string) {
+  const res = await api.get<Category>(`/categories/${id}`);
   return res.data;
 }
 
-export async function updateCategory(token: string, org: string, id: string, data: CategoryInput) {
-  const res = await api.put<Category>(`/categories/${id}`, data, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'X-Org-Slug': org,
-    },
-  });
+export async function updateCategory(_token: string, _org: string, id: string, data: CategoryInput) {
+  const res = await api.put<Category>(`/categories/${id}`, data);
   return res.data;
 }
 
-export async function deleteCategory(token: string, org: string, id: string) {
-  await api.delete(`/categories/${id}`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'X-Org-Slug': org,
-    },
-  });
+export async function deleteCategory(_token: string, _org: string, id: string) {
+  await api.delete(`/categories/${id}`);
 }

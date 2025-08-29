@@ -94,9 +94,9 @@ export default function CategoriesPage() {
       <table className="min-w-full bg-white">
         <thead>
           <tr>
-            <th className="border p-2 text-left">Name</th>
-            <th className="border p-2 text-left">Code</th>
-            <th className="border p-2">Actions</th>
+            <th className="border p-2 text-left">Ad</th>
+            <th className="border p-2 text-left">Kod</th>
+            <th className="border p-2">İşlemler</th>
           </tr>
         </thead>
         <tbody>
@@ -106,18 +106,8 @@ export default function CategoriesPage() {
                 <td className="border p-2">{c.name}</td>
                 <td className="border p-2">{c.code}</td>
                 <td className="border p-2 space-x-2 text-center">
-                  <button
-                    onClick={() => handleEdit(c)}
-                    className="px-2 py-1 bg-yellow-400"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => handleDelete(c)}
-                    className="px-2 py-1 bg-red-500 text-white"
-                  >
-                    Delete
-                  </button>
+                  <button onClick={() => handleEdit(c)} className="px-2 py-1 bg-yellow-400">Düzenle</button>
+                  <button onClick={() => handleDelete(c)} className="px-2 py-1 bg-red-500 text-white">Sil</button>
                 </td>
               </tr>
             ))

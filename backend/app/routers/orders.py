@@ -20,6 +20,11 @@ class StatusUpdate(BaseModel):
     status: str
 
 
+class PricingUpdate(BaseModel):
+    discount_percent: Optional[float] = None
+    vat_inclusive: Optional[bool] = None
+
+
 @router.post("/", response_model=schemas.OrderDetail)
 def create_order(
     order_in: schemas.OrderCreateWithItems,
@@ -36,14 +41,33 @@ def create_order(
     )
 
 
+@router.get("/{order_id}/linked-purchase-orders", response_model=List[schemas.PurchaseOrderRead])
+def linked_purchase_orders(
+    order_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(has_permission("order:view")),
+    org: models.Organization = Depends(get_current_org),
+):
+    current_user.organization_id = org.id
+    pos = (
+        db.query(models.PurchaseOrder)
+        .filter(models.PurchaseOrder.organization_id == org.id)
+        .filter(models.PurchaseOrder.sales_order_id == order_id)
+        .order_by(models.PurchaseOrder.order_date.desc().nullslast())
+        .all()
+    )
+    return pos
+
+
 @router.get("/", response_model=List[schemas.OrderRead])
 def list_orders(
     status: Optional[str] = None,
     partner_id: Optional[UUID] = None,
+    search: Optional[str] = None,
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user),
+    current_user: models.User = Depends(has_permission("order:view")),
     org: models.Organization = Depends(get_current_org),
 ):
     current_user.organization_id = org.id
@@ -52,6 +76,7 @@ def list_orders(
         current_user,
         status=status,
         partner_id=partner_id,
+        search=search,
         skip=skip,
         limit=limit,
     )
@@ -62,7 +87,7 @@ def list_orders(
 def get_order(
     order_id: UUID,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user),
+    current_user: models.User = Depends(has_permission("order:view")),
     org: models.Organization = Depends(get_current_org),
 ):
     current_user.organization_id = org.id
@@ -83,6 +108,25 @@ def change_status(
     current_user: models.User = Depends(has_permission("order:update")),
 ):
     order = order_service.update_order_status(db, order_id, status_in.status, current_user)
+    if not order:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found")
+    return order
+
+
+@router.post("/{order_id}/pricing", response_model=schemas.OrderRead)
+def update_pricing(
+    order_id: UUID,
+    body: PricingUpdate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(has_permission("order:update")),
+):
+    order = order_service.update_order_pricing(
+        db,
+        order_id,
+        current_user,
+        discount_percent=body.discount_percent,
+        vat_inclusive=body.vat_inclusive,
+    )
     if not order:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found")
     return order

@@ -16,18 +16,40 @@ from .routers import (
     accounts,
     financial_transactions,
 )
-from .api import production, dashboard
-from app.api import admin as admin_router
+from .api import production, dashboard, assets, me
+from .routers import invoices, roles, org_users, tenants, personnel
+from app.api.admin import router as admin_router
 from fastapi.middleware.cors import CORSMiddleware
+import logging
+import os
+from .config import settings
+from .routers import supplier_prices
 
 app = FastAPI(title="ERP API")
 
-origins = ["http://localhost:3000", "http://127.0.0.1:3000"]
+origins_env = os.getenv("ALLOW_ORIGINS")
+if origins_env:
+    origins = [o.strip() for o in origins_env.split(",") if o.strip()]
+    allow_credentials = False if "*" in origins else True
+else:
+    # Default to permissive CORS for development across devices on LAN.
+    # When using wildcard origin, credentials must be disabled per spec.
+    origins = ["*"]
+    allow_credentials = False
+    logging.getLogger(__name__).warning(
+        "CORS is set to '*' (development). Set ALLOW_ORIGINS env for production."
+    )
+
+# Warn if SECRET_KEY is using a weak default
+if settings.SECRET_KEY in (None, "", "supersecret"):
+    logging.getLogger(__name__).warning(
+        "SECRET_KEY is not set securely. Set SECRET_KEY env in production."
+    )
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
-    allow_credentials=True,
+    allow_credentials=allow_credentials,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -50,6 +72,14 @@ app.include_router(financial_transactions.router)
 app.include_router(production.router)
 app.include_router(dashboard.router)
 app.include_router(admin_router)
+app.include_router(assets.router)
+app.include_router(invoices.router)
+app.include_router(roles.router)
+app.include_router(org_users.router)
+app.include_router(me.router)
+app.include_router(tenants.router)
+app.include_router(personnel.router)
+app.include_router(supplier_prices.router)
 
 @app.get("/healthz")
 def healthz():

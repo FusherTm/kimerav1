@@ -17,6 +17,21 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from .database import Base
 from enum import Enum as PyEnum
+from .models_asset import Asset, AssetDetailVehicle, AssetDetailRealEstate, AssetDetailCheck
+from .models_personnel import Employee, EmployeeLeave
+
+
+class Invoice(Base):
+    __tablename__ = "invoices"
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    organization_id = Column(UUID(as_uuid=True), ForeignKey("organizations.id"), nullable=False)
+    partner_id = Column(UUID(as_uuid=True), ForeignKey("partners.id"), nullable=True)
+    invoice_number = Column(String, nullable=False)
+    issue_date = Column(Date, nullable=False)
+    due_date = Column(Date)
+    amount = Column(Numeric, nullable=False)
+    status = Column(String)
+    notes = Column(String)
 
 class PartnerType(str, PyEnum):
     CUSTOMER = "CUSTOMER"
@@ -115,6 +130,9 @@ class Order(Base):
     delivery_method = Column(String)
     notes = Column(String)
     grand_total = Column(Numeric)
+    # New: pricing controls
+    discount_percent = Column(Numeric)  # general discount on subtotal (%), nullable
+    vat_inclusive = Column(Boolean, default=False)  # if True, unit prices include VAT
 
 class OrderItem(Base):
     __tablename__ = "order_items"
@@ -123,6 +141,8 @@ class OrderItem(Base):
     order_id = Column(UUID(as_uuid=True), ForeignKey("orders.id"), nullable=False)
     product_id = Column(UUID(as_uuid=True), ForeignKey("products.id"))
     description = Column(String)
+    # Optional: directly provide total area (m^2) instead of width/height
+    area_sqm = Column(DECIMAL)
     width = Column(Integer)
     height = Column(Integer)
     quantity = Column(Integer)
@@ -140,6 +160,7 @@ class PurchaseOrder(Base):
     order_date = Column(Date)
     expected_delivery_date = Column(Date)
     grand_total = Column(Numeric)
+    sales_order_id = Column(UUID(as_uuid=True), ForeignKey("orders.id"))
 
 class PurchaseOrderItem(Base):
     __tablename__ = "purchase_order_items"
@@ -149,6 +170,7 @@ class PurchaseOrderItem(Base):
     quantity = Column(Integer)
     unit_price = Column(Numeric)
     total_price = Column(Numeric)
+    sales_order_item_id = Column(UUID(as_uuid=True), ForeignKey("order_items.id"))
 
 class ProductionStation(Base):
     __tablename__ = "production_stations"
@@ -199,3 +221,12 @@ class FinancialTransaction(Base):
     transaction_date = Column(Date)
     description = Column(String)
     method = Column(String)
+
+
+class SupplierPrice(Base):
+    __tablename__ = "supplier_prices"
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    organization_id = Column(UUID(as_uuid=True), ForeignKey("organizations.id"), nullable=False)
+    supplier_id = Column(UUID(as_uuid=True), ForeignKey("partners.id"), nullable=False)
+    product_id = Column(UUID(as_uuid=True), ForeignKey("products.id"), nullable=False)
+    unit_price = Column(Numeric, nullable=False)

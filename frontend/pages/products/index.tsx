@@ -122,11 +122,11 @@ export default function ProductsPage() {
       <table className="min-w-full bg-white">
         <thead>
           <tr>
-            <th className="border p-2 text-left">Name</th>
+            <th className="border p-2 text-left">Ad</th>
             <th className="border p-2 text-left">SKU</th>
-            <th className="border p-2 text-left">Category</th>
-            <th className="border p-2 text-left">Base Price (m²)</th>
-            <th className="border p-2">Actions</th>
+            <th className="border p-2 text-left">Kategori</th>
+            <th className="border p-2 text-left">Birim Fiyat (m²)</th>
+            <th className="border p-2">İşlemler</th>
           </tr>
         </thead>
         <tbody>
@@ -138,18 +138,8 @@ export default function ProductsPage() {
                 <td className="border p-2">{getCategoryName(p.category_id)}</td>
                 <td className="border p-2">{p.base_price_sqm}</td>
                 <td className="border p-2 space-x-2 text-center">
-                  <button
-                    onClick={() => handleEdit(p)}
-                    className="px-2 py-1 bg-yellow-400"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => handleDelete(p)}
-                    className="px-2 py-1 bg-red-500 text-white"
-                  >
-                    Delete
-                  </button>
+                  <button onClick={() => handleEdit(p)} className="px-2 py-1 bg-yellow-400">Düzenle</button>
+                  <button onClick={() => handleDelete(p)} className="px-2 py-1 bg-red-500 text-white">Sil</button>
                 </td>
               </tr>
             ))

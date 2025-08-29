@@ -1,8 +1,4 @@
-import axios from 'axios';
-
-const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000',
-});
+import api from './client';
 
 export interface ProductionJob {
   id: string;
@@ -15,22 +11,12 @@ export interface ProductionJob {
   quantity?: number;
 }
 
-export async function getActiveJobs(token: string, org: string) {
-  const res = await api.get<ProductionJob[]>(`/production/active-jobs`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'X-Org-Slug': org,
-    },
-  });
+export async function getActiveJobs(_token: string, _org: string) {
+  const res = await api.get<ProductionJob[]>(`/production/active-jobs`);
   return res.data;
 }
 
-export async function updateJobStatus(token: string, org: string, id: string, status: string) {
-  const res = await api.post<ProductionJob>(`/production/jobs/${id}/status`, { status }, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'X-Org-Slug': org,
-    },
-  });
+export async function updateJobStatus(_token: string, _org: string, id: string, status: string) {
+  const res = await api.post<ProductionJob>(`/production/jobs/${id}/status`, { status });
   return res.data;
 }

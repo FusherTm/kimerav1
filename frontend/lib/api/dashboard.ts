@@ -1,22 +1,18 @@
-import axios from 'axios';
-
-const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000',
-});
+import api from './client';
 
 export interface DashboardSummary {
   total_balance: number;
+  total_receivables: number;
+  total_payables: number;
+  recent_transactions: Array<{ id: string; transaction_date?: string | null; direction: 'IN' | 'OUT' | string; amount: number; description?: string | null; method?: string | null; partner_id?: string | null }>;
   active_jobs: number;
-  waiting_orders: number;
-  total_customers: number;
+  jobs_by_status: Record<string, number>;
+  jobs_by_station?: Record<string, number>;
+  todays_deliveries: Array<{ id: string; order_number?: string | null; partner_name?: string | null }>;
+  cash_flow_7d?: number[];
 }
 
-export async function getDashboardSummary(token: string, org: string) {
-  const res = await api.get<DashboardSummary>(`/dashboard/summary`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'X-Org-Slug': org,
-    },
-  });
+export async function getDashboardSummary(_token: string, _org: string) {
+  const res = await api.get<DashboardSummary>(`/dashboard/summary`);
   return res.data;
 }
