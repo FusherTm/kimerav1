@@ -32,11 +32,7 @@ export default function OrderDetailPage() {
     getLinkedPurchaseOrders(id as string).then(setLinkedPOs).catch(() => setLinkedPOs([]));
   }, [id]);
 
-  const handleStatus = async () => {
-    if (!id) return;
-    await updateOrderStatus(token, org, id as string, status);
-    setOrder(order ? { ...order, status } : order);
-  };
+  const handleStatus = async () => {\n    if (!id) return;\n    try {\n      const updated = await updateOrderStatus(token, org, id as string, status);\n      setOrder(order ? { ...order, status: updated.status } : (updated as any));\n    } catch (e: any) {\n      const msg = e?.response?.data?.detail || e?.message || 'Durum güncellenemedi';\n      alert(msg);\n      console.error('Status update failed', e);\n    }\n  };
 
   const handlePricing = async () => {
     if (!id) return;
@@ -141,3 +137,5 @@ export default function OrderDetailPage() {
     </Layout>
   );
 }
+
+
