@@ -10,12 +10,12 @@ services:
       - PYTHONPATH=/app
 
     ports:
-      - "8000:8000"
+      - "8002:8002"
     volumes:
       - ./backend:/app
     networks:
       - infrastructure_net_backendservices
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8002 --reload
 
   s_dogus_erp_frontend:
     build: ./frontend
@@ -29,7 +29,7 @@ services:
       - ./frontend:/app
       - /app/node_modules
     environment:
-      - NEXT_PUBLIC_API_URL=http://s_dogus_erp_backend:8000
+      - NEXT_PUBLIC_API_URL=http://s_dogus_erp_backend:8001
     networks:
       - infrastructure_net_backendservices
     command: npm run dev
