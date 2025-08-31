@@ -6,7 +6,7 @@ services:
     env_file:
       - ops/.env
     environment:
-      - DATABASE_URL=postgresql://postgres:postgres@c_postgres:5432/erp
+      - DATABASE_URL=postgresql://erp_admin:StrongPasswordAdmin123@c_postgres:5432/erp_db
       - PYTHONPATH=/app
     depends_on:
       postgres:
