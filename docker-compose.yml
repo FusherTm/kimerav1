@@ -15,7 +15,7 @@ services:
       - ./backend:/app
     networks:
       - infrastructure_net_backendservices
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8002 --reload
+    command: uvicorn backend.app.main:app --host 0.0.0.0 --port 8002 --reload
 
   s_dogus_erp_frontend:
     build: ./frontend
