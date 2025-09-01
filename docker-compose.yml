@@ -10,7 +10,7 @@ services:
       - PYTHONPATH=/app
 
     ports:
-      - "8002:8002"
+      - "8001:8002"
     volumes:
       - ./backend:/app
     networks:
@@ -22,14 +22,14 @@ services:
     container_name: c_dogus_erp_frontend
   
     ports:
-      - "8001:8001"
+      - "8002:8002"
     external_links:
     - s_dogus_erp_backend
     volumes:
       - ./frontend:/app
       - /app/node_modules
     environment:
-      - NEXT_PUBLIC_API_URL=http://s_dogus_erp_backend:8001
+      - NEXT_PUBLIC_API_URL=http://s_dogus_erp_backend:8002
     networks:
       - infrastructure_net_backendservices
     command: npm run dev
