@@ -10,7 +10,7 @@ services:
       - PYTHONPATH=/app
 
     ports:
-      - "8002:8002"
+      - "8001:8002"
     volumes:
       - ./backend:/app
     networks:
