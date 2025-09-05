@@ -2,11 +2,12 @@
   "name": "erp-frontend",
   "version": "1.0.0",
   "scripts": {
-    "dev": "next dev -p 8002",
+    "dev": "next dev",
     "build": "next build",
     "start": "next start"
   },
   "dependencies": {
+    
     "@hookform/resolvers": "3.3.3",
     "axios": "1.5.0",
     "next": "^15.5.2",

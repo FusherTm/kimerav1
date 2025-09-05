@@ -1,16 +1,24 @@
 import axios from "axios";
 
 // Resolve API base URL
-// Priority: env NEXT_PUBLIC_API_URL -> window hostname (port 8000) -> localhost
+// Browser: use public URL or current host:8002
+// SSR (inside container): prefer internal service URL
 const resolvedBaseURL = (() => {
-  const envUrl = process.env.NEXT_PUBLIC_API_URL;
-  if (envUrl && envUrl.trim()) return envUrl;
-  if (typeof window !== "undefined") {
-    const proto = window.location.protocol || "http:";
-    const host = window.location.hostname || "localhost";
-    return `${proto}//${host}:8000`;
+  const publicUrl = process.env.NEXT_PUBLIC_API_URL;
+  const internalUrl = process.env.API_URL_INTERNAL || process.env.API_URL;
+
+  if (typeof window === "undefined") {
+    // SSR
+    if (internalUrl && internalUrl.trim()) return internalUrl;
+    // Fallback to Docker service name (works from within containers)
+    return "http://s_dogus_erp_backend:8002";
   }
-  return "http://localhost:8000";
+
+  // Browser
+  if (publicUrl && publicUrl.trim()) return publicUrl;
+  const proto = window.location.protocol || "http:";
+  const host = window.location.hostname || "localhost";
+  return `${proto}//${host}:8002`;
 })();
 
 const api = axios.create({

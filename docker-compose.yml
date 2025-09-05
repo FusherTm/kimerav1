@@ -1,5 +1,24 @@
 services:
 
+  postgres:
+    image: postgres:15-alpine
+    container_name: c_postgres
+    environment:
+      - POSTGRES_USER=erp_admin
+      - POSTGRES_PASSWORD=StrongPasswordAdmin123
+      - POSTGRES_DB=erp_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - infrastructure_net_backendservices
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U erp_admin -d erp_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   s_dogus_erp_backend:
     build: ./backend
     container_name: c_dogus_erp_backend
@@ -15,26 +34,33 @@ services:
       - ./backend:/app
     networks:
       - infrastructure_net_backendservices
+    depends_on:
+      postgres:
+        condition: service_healthy
     command: uvicorn app.main:app --host 0.0.0.0 --port 8002 --reload
 
   s_dogus_erp_frontend:
     build: ./frontend
     container_name: c_dogus_erp_frontend
-  
+    
     ports:
-      - "8002:8002"
+      - "3000:3000"
     external_links:
     - s_dogus_erp_backend
     volumes:
       - ./frontend:/app
       - /app/node_modules
     environment:
-      - NEXT_PUBLIC_API_URL=http://s_dogus_erp_backend:8002
+      - NEXT_PUBLIC_API_URL=http://localhost:8002
+      - API_URL_INTERNAL=http://s_dogus_erp_backend:8002
     networks:
       - infrastructure_net_backendservices
-    command: npm run dev
+    command: npx next dev -p 3000 -H 0.0.0.0
 
 networks:
   infrastructure_net_backendservices:
     driver: bridge
-    external: true
+    #external: true
+
+volumes:
+  pgdata:

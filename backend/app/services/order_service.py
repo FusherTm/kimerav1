@@ -30,6 +30,22 @@ def _generate_order_number(db: Session, org_id: UUID, order_date: date) -> str:
     return f"{year}-{seq:03d}"
 
 
+def _calc_grand_total(subtotal: Decimal, *, discount_percent: Decimal | None, vat_inclusive: bool, vat_rate: Decimal = Decimal("0.20")) -> Decimal:
+    discount = Decimal("0")
+    if discount_percent is not None:
+        try:
+            discount = (subtotal * Decimal(discount_percent)) / Decimal("100")
+        except Exception:
+            discount = Decimal("0")
+    if vat_inclusive:
+        # prices already include VAT; discount applies on gross
+        return (subtotal - discount).quantize(Decimal("0.01"))
+    # prices exclude VAT; add VAT after discount
+    net = subtotal - discount
+    vat = (net * vat_rate)
+    return (net + vat).quantize(Decimal("0.01"))
+
+
 def create_order(
     db: Session, order_in: schemas.OrderCreateWithItems, current_user: models.User
 ) -> models.Order:
@@ -51,11 +67,11 @@ def create_order(
         discount_percent=getattr(order_in, 'discount_percent', None),
         vat_inclusive=bool(getattr(order_in, 'vat_inclusive', False)),
     )
-    with db.begin():
+    try:
         db.add(order)
         db.flush()  # obtain order.id
 
-        grand_total = Decimal("0")
+        subtotal = Decimal("0")
         for item_in in order_in.items:
             unit_price = Decimal(item_in.unit_price or 0)
 
@@ -70,7 +86,7 @@ def create_order(
                 area_m2 = width_m * height_m * quantity
 
             total_price = area_m2 * unit_price
-            grand_total += total_price
+            subtotal += total_price
 
             order_item = models.OrderItem(
                 organization_id=current_user.organization_id,
@@ -87,7 +103,11 @@ def create_order(
             )
             db.add(order_item)
 
-        order.grand_total = grand_total
+        order.grand_total = _calc_grand_total(
+            subtotal,
+            discount_percent=getattr(order, "discount_percent", None),
+            vat_inclusive=bool(getattr(order, "vat_inclusive", False)),
+        )
 
         # If created directly as SIPARIS (confirmed), post receivable transaction
         if (order.status or "").upper() == "SIPARIS" and order.partner_id is not None:
@@ -104,6 +124,11 @@ def create_order(
                 method="ORDER",
             )
             db.add(tx)
+
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
     db.refresh(order)
     return order
 
@@ -129,7 +154,37 @@ def update_order_pricing(
         order.vat_inclusive = bool(vat_inclusive)
         changed = True
     if changed:
+        # Recalculate grand_total based on existing items
+        subtotal = Decimal("0")
+        items = (
+            db.query(models.OrderItem)
+            .filter(
+                models.OrderItem.order_id == order.id,
+                models.OrderItem.organization_id == current_user.organization_id,
+            )
+            .all()
+        )
+        for it in items:
+            subtotal += Decimal(it.total_price or 0)
+        order.grand_total = _calc_grand_total(
+            subtotal,
+            discount_percent=getattr(order, "discount_percent", None),
+            vat_inclusive=bool(getattr(order, "vat_inclusive", False)),
+        )
         db.add(order)
+
+        # If there is a receivable transaction recorded for this order, sync its amount
+        tx = (
+            db.query(models.FinancialTransaction)
+            .filter(
+                models.FinancialTransaction.order_id == order.id,
+                models.FinancialTransaction.organization_id == current_user.organization_id,
+            )
+            .first()
+        )
+        if tx is not None:
+            tx.amount = order.grand_total or 0
+            db.add(tx)
         db.commit()
         db.refresh(order)
     return order
@@ -150,7 +205,7 @@ def update_order_status(
         return None
     previous_status = order.status
     order.status = status
-    with db.begin():
+    try:
         db.add(order)
 
         if status == "URETIMDE":
@@ -189,6 +244,10 @@ def update_order_status(
                     method="ORDER",
                 )
                 db.add(tx)
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
     db.refresh(order)
     return order
 

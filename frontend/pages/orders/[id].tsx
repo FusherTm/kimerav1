@@ -32,7 +32,18 @@ export default function OrderDetailPage() {
     getLinkedPurchaseOrders(id as string).then(setLinkedPOs).catch(() => setLinkedPOs([]));
   }, [id]);
 
-  const handleStatus = async () => {\n    if (!id) return;\n    try {\n      const updated = await updateOrderStatus(token, org, id as string, status);\n      setOrder(order ? { ...order, status: updated.status } : (updated as any));\n    } catch (e: any) {\n      const msg = e?.response?.data?.detail || e?.message || 'Durum g�ncellenemedi';\n      alert(msg);\n      console.error('Status update failed', e);\n    }\n  };
+  const handleStatus = async () => {
+    if (!id) return;
+    try {
+      const updated = await updateOrderStatus(token, org, id as string, status);
+      setOrder(order ? { ...order, status: updated.status } : (updated as any));
+    } catch (e: any) {
+      const msg = e?.response?.data?.detail || e?.message || 'Durum güncellenemedi';
+      alert(msg);
+      // eslint-disable-next-line no-console
+      console.error('Status update failed', e);
+    }
+  };
 
   const handlePricing = async () => {
     if (!id) return;
@@ -49,8 +60,8 @@ export default function OrderDetailPage() {
       {order ? (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h1 className="text-xl font-bold">Sipariş {order.order_number}</h1>
-            <a className="text-blue-600 underline text-sm" href={`/orders/${id}/quote-print`} target="_blank" rel="noreferrer">Teklifi Yazdır</a>
+            <h1 className="text-xl font-bold">Siparis {order.order_number}</h1>
+            <a className="text-blue-600 underline text-sm" href={`/orders/${id}/quote-print`} target="_blank" rel="noreferrer">Teklifi Yazdir</a>
           </div>
           <div>Partner: {partners.find((p) => p.id === order.partner_id)?.name || ''}</div>
           <div>Durum: {order.status}</div>
@@ -64,11 +75,11 @@ export default function OrderDetailPage() {
           </div>
 
           <div className="bg-white p-3 rounded shadow">
-            <h2 className="font-semibold mb-2">Fiyat Ayarları</h2>
+            <h2 className="font-semibold mb-2">Fiyat Ayarlari</h2>
             <div className="flex items-center gap-4 text-sm">
               <label className="flex items-center gap-2">
-                <span>Alt İskonto (%)</span>
-                <input className="border p-1 w-24" value={discount} onChange={e=> setDiscount(e.target.value)} placeholder="örn. 5" />
+                <span>Alt iskonto (%)</span>
+                <input className="border p-1 w-24" value={discount} onChange={e=> setDiscount(e.target.value)} placeholder="orn. 5" />
               </label>
               <label className="flex items-center gap-2">
                 <input type="checkbox" checked={vatInclusive} onChange={e=> setVatInclusive(e.target.checked)} />
@@ -81,7 +92,7 @@ export default function OrderDetailPage() {
           <table className="min-w-full bg-white">
             <thead>
               <tr>
-                <th className="border p-2">Ürün</th>
+                <th className="border p-2">Urun</th>
                 <th className="border p-2">En</th>
                 <th className="border p-2">Boy</th>
                 <th className="border p-2">Adet</th>
@@ -103,7 +114,7 @@ export default function OrderDetailPage() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={6} className="text-center p-4">No items found for this order.</td>
+                  <td colSpan={6} className="text-center p-4">Bu siparis icin satir yok.</td>
                 </tr>
               )}
             </tbody>
@@ -111,7 +122,7 @@ export default function OrderDetailPage() {
 
           {linkedPOs.length > 0 && (
             <div className="bg-white p-3 rounded shadow">
-              <h2 className="font-semibold mb-2">Bağlı Satınalma Siparişleri</h2>
+              <h2 className="font-semibold mb-2">Bagli Satinalma Siparisleri</h2>
               <table className="min-w-full text-sm">
                 <thead>
                   <tr>
@@ -132,10 +143,8 @@ export default function OrderDetailPage() {
           )}
         </div>
       ) : (
-        <div>Yükleniyor...</div>
+        <div>Yukleniyor...</div>
       )}
     </Layout>
   );
 }
-
-
