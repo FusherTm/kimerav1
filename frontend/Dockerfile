@@ -3,5 +3,6 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 COPY . .
-EXPOSE 8002
+# Next.js dev server port (mapped to host in compose)
+EXPOSE 3002
 CMD ["npm", "run", "dev"]
