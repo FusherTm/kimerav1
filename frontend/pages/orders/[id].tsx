@@ -5,6 +5,7 @@ import { getOrder, updateOrderStatus, updateOrderPricing, OrderDetail } from '..
 import { getLinkedPurchaseOrders, PurchaseOrder } from '../../lib/api/purchase';
 import { listPartners, Partner } from '../../lib/api/partners';
 import { listProducts, Product } from '../../lib/api/products';
+import { listOpenConnections, getOrderConnection, applyConnection, Connection } from '../../lib/api/connections';
 
 export default function OrderDetailPage() {
   const router = useRouter();
@@ -16,6 +17,10 @@ export default function OrderDetailPage() {
   const [linkedPOs, setLinkedPOs] = useState<PurchaseOrder[]>([]);
   const [discount, setDiscount] = useState<string>('');
   const [vatInclusive, setVatInclusive] = useState<boolean>(false);
+  const [connections, setConnections] = useState<Connection[]>([]);
+  const [selectedConn, setSelectedConn] = useState<string>('');
+  const [applyAmount, setApplyAmount] = useState<string>('');
+  const [appliedInfo, setAppliedInfo] = useState<{connection_id: string; amount: number} | null>(null);
   const token = '';
   const org = '';
 
@@ -26,10 +31,22 @@ export default function OrderDetailPage() {
       setStatus(data.status || '');
       setDiscount((data as any).discount_percent != null ? String((data as any).discount_percent) : '');
       setVatInclusive(!!(data as any).vat_inclusive);
+      if (data.partner_id) {
+        listOpenConnections(String(data.partner_id)).then(setConnections).catch(() => setConnections([]));
+      }
     });
     listPartners().then(setPartners);
     listProducts(token, org, {}).then(setProducts);
     getLinkedPurchaseOrders(id as string).then(setLinkedPOs).catch(() => setLinkedPOs([]));
+    getOrderConnection(id as string)
+      .then((app) => {
+        if (app) {
+          setAppliedInfo({ connection_id: (app as any).connection_id, amount: (app as any).amount });
+          setSelectedConn((app as any).connection_id);
+          setApplyAmount(String((app as any).amount));
+        }
+      })
+      .catch(() => setAppliedInfo(null));
   }, [id]);
 
   const handleStatus = async () => {
@@ -53,6 +70,21 @@ export default function OrderDetailPage() {
     const updated = await updateOrderPricing(id as string, payload);
     // Preserve existing items to avoid losing detail shape
     setOrder((prev) => (prev ? ({ ...prev, ...updated }) as any : (updated as any)));
+  };
+
+  const handleApplyConnection = async () => {
+    if (!id || !selectedConn) return;
+    const amt = Number(applyAmount || 0);
+    if (!amt || amt <= 0) { alert('Tutar giriniz'); return; }
+    try {
+      const app = await applyConnection(selectedConn, id as string, amt);
+      setAppliedInfo({ connection_id: app.connection_id, amount: app.amount });
+      if (order?.partner_id) {
+        listOpenConnections(String(order.partner_id)).then(setConnections).catch(() => {});
+      }
+    } catch (e: any) {
+      alert(e?.response?.data?.detail || 'Bağlantı uygulanamadı');
+    }
   };
 
   return (
@@ -89,6 +121,33 @@ export default function OrderDetailPage() {
             </div>
           </div>
 
+          {order?.status !== 'SIPARIS' && (
+            <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 p-3 rounded">
+              Bağlantı uygulamak için sipariş durumunu 'SIPARIS' yapın. Yukarıdaki durum seçicisinden güncelleyebilirsiniz.
+            </div>
+          )}
+
+          {order?.status === 'SIPARIS' && (
+            <div className="bg-white p-3 rounded shadow">
+              <h2 className="font-semibold mb-2">Bağlantı Uygula</h2>
+              <div className="flex items-center gap-3">
+                <select className="border p-1" value={selectedConn} onChange={(e)=> setSelectedConn(e.target.value)}>
+                  <option value="">Seçiniz</option>
+                  {connections.map(c => (
+                    <option key={c.id} value={c.id}>
+                      {(c.date ? new Date(c.date).toLocaleDateString('tr-TR') : '-') + ` - Kalan: ${c.remaining_amount}`}
+                    </option>
+                  ))}
+                </select>
+                <input className="border p-1 w-28" placeholder="Tutar" value={applyAmount} onChange={(e)=> setApplyAmount(e.target.value)} />
+                <button className="bg-blue-500 text-white px-3 py-1" onClick={handleApplyConnection}>Uygula</button>
+              </div>
+              {appliedInfo && (
+                <div className="text-sm text-gray-700 mt-2">Uygulanan bağlantı: {appliedInfo.amount}</div>
+              )}
+            </div>
+          )}
+
           <table className="min-w-full bg-white">
             <thead>
               <tr>
@@ -119,6 +178,17 @@ export default function OrderDetailPage() {
               )}
             </tbody>
           </table>
+
+          <div className="mt-3 ml-auto max-w-sm text-sm bg-white p-3 rounded shadow">
+            <div className="flex justify-between"><span>Sipariş Toplamı</span><span>{order?.grand_total}</span></div>
+            {appliedInfo && (
+              <div className="flex justify-between"><span>Uygulanan Bağlantı</span><span>-{appliedInfo.amount}</span></div>
+            )}
+            <div className="flex justify-between font-semibold">
+              <span>Kalan Borç</span>
+              <span>{(Number(order?.grand_total || 0) - Number(appliedInfo?.amount || 0)).toFixed(2)}</span>
+            </div>
+          </div>
 
           {linkedPOs.length > 0 && (
             <div className="bg-white p-3 rounded shadow">

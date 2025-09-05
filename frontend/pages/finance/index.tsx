@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import Layout from '../../components/Layout';
 import TransactionForm from '../../components/TransactionForm';
 import AccountForm from '../../components/AccountForm';
+import ConnectionForm from '../../components/ConnectionForm';
 import { getAccounts, getRecentTransactions, Account, Transaction } from '../../lib/api/finance';
 import api from '../../lib/api/client';
 
@@ -9,6 +10,7 @@ export default function FinancePage() {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [accountModalOpen, setAccountModalOpen] = useState(false);
+  const [connectionModalOpen, setConnectionModalOpen] = useState(false);
   const [recent, setRecent] = useState<Transaction[]>([]);
 
   const token = '';
@@ -63,6 +65,12 @@ export default function FinancePage() {
       >
         Yeni Hesap Ekle
       </button>
+      <button
+        onClick={() => setConnectionModalOpen(true)}
+        className="mt-4 ml-2 bg-purple-600 text-white px-4 py-2"
+      >
+        Yeni Bağlantı
+      </button>
       {modalOpen && (
         <TransactionForm
           accounts={accounts}
@@ -74,6 +82,12 @@ export default function FinancePage() {
         <AccountForm
           onSuccess={async () => { setAccountModalOpen(false); await loadAccounts(); }}
           onCancel={() => setAccountModalOpen(false)}
+        />
+      )}
+      {connectionModalOpen && (
+        <ConnectionForm
+          onSuccess={() => { setConnectionModalOpen(false); loadRecent(); }}
+          onCancel={() => setConnectionModalOpen(false)}
         />
       )}
       <div className="mt-8 bg-white p-4 shadow rounded">
@@ -115,4 +129,3 @@ export default function FinancePage() {
     </Layout>
   );
 }
-

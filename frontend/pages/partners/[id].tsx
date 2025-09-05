@@ -2,6 +2,7 @@ import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 import Layout from '../../components/Layout';
 import { getPartner, getPartnerOrders, getPartnerStatement, Partner, Order, PartnerStatement } from '../../lib/api/partners';
+import { listConnections } from '../../lib/api/connections';
 
 export default function PartnerDetailPage() {
   const router = useRouter();
@@ -10,6 +11,7 @@ export default function PartnerDetailPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [statement, setStatement] = useState<PartnerStatement | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [connSummary, setConnSummary] = useState<{ total: number; used: number; remaining: number }>({ total: 0, used: 0, remaining: 0 });
 
   useEffect(() => {
     if (!id) return;
@@ -23,6 +25,12 @@ export default function PartnerDetailPage() {
         setPartner(p);
         setOrders(o);
         setStatement(s);
+        try {
+          const conns = await listConnections(id as string);
+          const total = conns.reduce((sum, c: any) => sum + Number(c.total_amount || 0), 0);
+          const remaining = conns.reduce((sum, c: any) => sum + Number(c.remaining_amount || 0), 0);
+          setConnSummary({ total, used: total - remaining, remaining });
+        } catch {}
       } catch (e: any) {
         setError(e?.response?.data?.detail || e?.message || 'Kaynaklar yüklenemedi');
       }
@@ -69,6 +77,14 @@ export default function PartnerDetailPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="bg-white p-4 rounded shadow">
+              <h2 className="font-semibold mb-2">Bağlantı Hesabı</h2>
+              <div className="grid grid-cols-3 gap-2 text-sm">
+                <div>Toplam: <span className="font-semibold">{connSummary.total.toFixed(2)}</span></div>
+                <div>Kullanılan: <span className="font-semibold">{connSummary.used.toFixed(2)}</span></div>
+                <div>Kalan: <span className="font-semibold">{connSummary.remaining.toFixed(2)}</span></div>
+              </div>
+            </div>
             <div className="bg-white p-4 rounded shadow">
               <h2 className="font-semibold mb-2">Son Siparişler</h2>
               <table className="min-w-full text-sm">
@@ -147,4 +163,3 @@ export default function PartnerDetailPage() {
     </Layout>
   );
 }
-

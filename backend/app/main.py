@@ -24,6 +24,8 @@ import logging
 import os
 from .config import settings
 from .routers import supplier_prices
+from .routers import connections
+from .database import Base, engine
 
 app = FastAPI(title="ERP API")
 
@@ -51,8 +53,18 @@ app.add_middleware(
     allow_origins=origins,
     allow_credentials=allow_credentials,
     allow_methods=["*"],
+    # In dev, be permissive to avoid preflight/header mismatches hiding errors in the browser
     allow_headers=["*"],
 )
+
+
+@app.on_event("startup")
+def ensure_tables():
+    try:
+        # Ensure new tables (e.g., connections) exist in dev environments
+        Base.metadata.create_all(bind=engine)
+    except Exception as e:
+        logging.getLogger(__name__).warning(f"create_all failed: {e}")
 
 app.include_router(auth.router)
 app.include_router(organizations.router)
@@ -80,6 +92,7 @@ app.include_router(me.router)
 app.include_router(tenants.router)
 app.include_router(personnel.router)
 app.include_router(supplier_prices.router)
+app.include_router(connections.router)
 
 @app.get("/healthz")
 def healthz():

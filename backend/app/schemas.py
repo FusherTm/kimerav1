@@ -397,4 +397,41 @@ class LeaveRead(LeaveBase):
     id: UUID
     model_config = ConfigDict(from_attributes=True)
 
+# Connections (Bağlantı)
+class ConnectionBase(BaseModel):
+    partner_id: UUID
+    # accept number or string to be lenient
+    total_amount: Decimal | int | float | str
+    # allow any date-like value from ORM; request schema narrows this
+    date: Optional[Any] = None
+    method: Optional[str] = None
+    description: Optional[str] = None
+
+
+class ConnectionCreate(ConnectionBase):
+    # Accept ISO string or dd.mm.yyyy for requests; service will parse
+    date: Optional[date | str] = None
+
+
+class ConnectionRead(ConnectionBase):
+    id: UUID
+    remaining_amount: Decimal
+    status: Optional[str] = None
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ConnectionApplicationBase(BaseModel):
+    connection_id: UUID
+    order_id: UUID
+    amount: Decimal
+
+
+class ConnectionApplicationCreate(ConnectionApplicationBase):
+    pass
+
+
+class ConnectionApplicationRead(ConnectionApplicationBase):
+    id: UUID
+    model_config = ConfigDict(from_attributes=True)
+
 

@@ -19,6 +19,8 @@ from .database import Base
 from enum import Enum as PyEnum
 from .models_asset import Asset, AssetDetailVehicle, AssetDetailRealEstate, AssetDetailCheck
 from .models_personnel import Employee, EmployeeLeave
+from sqlalchemy import UniqueConstraint
+from sqlalchemy.sql import func
 
 
 class Invoice(Base):
@@ -230,3 +232,31 @@ class SupplierPrice(Base):
     supplier_id = Column(UUID(as_uuid=True), ForeignKey("partners.id"), nullable=False)
     product_id = Column(UUID(as_uuid=True), ForeignKey("products.id"), nullable=False)
     unit_price = Column(Numeric, nullable=False)
+
+
+class Connection(Base):
+    __tablename__ = "connections"
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    organization_id = Column(UUID(as_uuid=True), ForeignKey("organizations.id"), nullable=False)
+    partner_id = Column(UUID(as_uuid=True), ForeignKey("partners.id"), nullable=False)
+    total_amount = Column(Numeric, nullable=False)
+    remaining_amount = Column(Numeric, nullable=False)
+    date = Column(Date)
+    method = Column(String)
+    description = Column(String)
+    status = Column(String, default="OPEN")
+    created_at = Column(DateTime, server_default=func.now())
+
+
+class ConnectionApplication(Base):
+    __tablename__ = "connection_applications"
+    __table_args__ = (
+        UniqueConstraint("order_id", name="uq_connection_application_order"),
+    )
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    organization_id = Column(UUID(as_uuid=True), ForeignKey("organizations.id"), nullable=False)
+    connection_id = Column(UUID(as_uuid=True), ForeignKey("connections.id"), nullable=False)
+    order_id = Column(UUID(as_uuid=True), ForeignKey("orders.id"), nullable=False)
+    amount = Column(Numeric, nullable=False)
+    # Store only the date part; rely on DB current_date
+    applied_at = Column(Date, server_default=func.current_date())
