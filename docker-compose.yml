@@ -6,28 +6,21 @@ services:
       - ops/.env
     environment:
       - PYTHONPATH=/app
-
     ports:
       - "8002:8002"
-    volumes:
-      - ./backend:/app
     networks:
       - infrastructure_net_backendservices
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8002 --reload
-
+    # volumes yok (prod)
+  
   s_dogus_erp_frontend:
     build: ./frontend
     container_name: c_dogus_erp_frontend
-    
+    depends_on:
+      - s_dogus_erp_backend
     ports:
       - "3002:3002"
-    external_links:
-    - s_dogus_erp_backend
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
     environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:8002
+      - NEXT_PUBLIC_API_URL=https://erp-test-api.seryak.com
       - API_URL_INTERNAL=http://s_dogus_erp_backend:8002
     networks:
       - infrastructure_net_backendservices
@@ -36,4 +29,4 @@ services:
 networks:
   infrastructure_net_backendservices:
     driver: bridge
-    #external: true
+    external: true
