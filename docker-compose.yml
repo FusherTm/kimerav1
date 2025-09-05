@@ -11,7 +11,7 @@ services:
     networks:
       - infrastructure_net_backendservices
     # volumes yok (prod)
-
+  
   s_dogus_erp_frontend:
     build: ./frontend
     container_name: c_dogus_erp_frontend
