@@ -20,7 +20,7 @@ services:
     ports:
       - "3002:3002"
     environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:8002
+      - NEXT_PUBLIC_API_URL=http://135.125.210.132:8002
       - API_URL_INTERNAL=http://s_dogus_erp_backend:8002
     networks:
       - infrastructure_net_backendservices
